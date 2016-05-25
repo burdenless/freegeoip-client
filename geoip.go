@@ -1,9 +1,9 @@
 /////////////
 //
 // GeoIP
-// Freegeoip.net API tool written in Go
+// Freegeoip.net API client written in Go
 //
-// Developed by: Byt3smith
+// @Byt3smith
 //
 /////////////
 
@@ -11,53 +11,71 @@ package main
 
 import (
 	"fmt"
+	"net/http"
+	"io/ioutil"
 	"encoding/json"
-	"github.com/jmcvetta/napping"
 )
 
 var BASE_URL = "http://freegeoip.net/json/"
-
 type ResponseUserAgent struct {
 	Useragent string `json:"user-agent"`
 }
 
-// A Params is a map containing URL parameters.
-type Params map[string]string
+func geoQuery(url string) {
 
-
-func main() {
-
-	// Start Session
-	s := napping.Session{}
-	var userdomain string
-
-	fmt.Printf("Domain:> ")
-	fmt.Scan(&userdomain)
-  url := BASE_URL + userdomain
-
-	fmt.Println("--------------------------------------------------------------------------------")
-	println("")
-
-	res := ResponseUserAgent{}
-	resp, err := s.Get(url, nil, &res, nil)
-	if err != nil {
-    fmt.Println("Error in request")
+	// Struct to hold response data
+	//
+	type Response struct {
+		IP		string `json:"ip"`
+		CC		string `json:"country_code"`
+		CN 		string `json:"country_name"`
+		RN		string `json:"region_name"`
+		CITY	string `json:"city"`
+		LAT		float32 `json:"latitude"`
+		LONG	float32 `json:"longitude"`
 	}
 
-	// Prepare the JSON response to be parsed
-	var r interface{}
-	err = json.Unmarshal([]byte(resp.RawText()), &r)
+	var client http.Client
+
+	resp, err := client.Get(url)
+	defer resp.Body.Close()
+	if err != nil {
+		 fmt.Println("[ ERROR ] ", err)
+	}
 
 	//
 	// Process response
 	//
-	println("")
-	fmt.Println("Response Code:", resp.Status())
-	fmt.Println("--------------------------------------------------------------------------------")
-	fmt.Println("Header")
-	fmt.Println(resp.HttpResponse().Header)
-	fmt.Println("--------------------------------------------------------------------------------")
-	fmt.Println("Data")
-	fmt.Println(r)
-	println("")
+	fmt.Println("\n[ Response Status: ", resp.StatusCode, " ]")
+
+	if resp.StatusCode == 200 { // OK
+		 bodyBytes, err2 := ioutil.ReadAll(resp.Body)
+		 if err2 != nil {
+			 fmt.Println(err2)
+		 }
+		 bodyString := string(bodyBytes)
+		 res := Response{}
+		 json.Unmarshal([]byte(bodyString), &res)
+		 fmt.Println("\n[ Data ]")
+		 fmt.Println("IP: ", res.IP)
+		 fmt.Println("Country Code: ", res.CC)
+		 fmt.Println("Country Name: ", res.CN)
+		 fmt.Println("Region: ", res.RN)
+		 fmt.Println("City: ", res.CITY)
+		 fmt.Println("Latitude: ", res.LAT)
+		 fmt.Println("Longitude: ", res.LONG)
+
+	} else { // Not OK
+		fmt.Println("[ ERROR ] ", err)
+	}
+}
+
+func main() {
+	var userdomain string
+
+	fmt.Printf("Query [google.com, 8.8.4.4]: ")
+	fmt.Scan(&userdomain)
+  url := BASE_URL + userdomain
+	geoQuery(url)
+
 }
