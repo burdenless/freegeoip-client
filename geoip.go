@@ -17,9 +17,6 @@ import (
 )
 
 var BASE_URL = "http://freegeoip.net/json/"
-type ResponseUserAgent struct {
-	Useragent string `json:"user-agent"`
-}
 
 func geoQuery(url string) {
 
